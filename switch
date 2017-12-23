@@ -74,8 +74,9 @@ class Switch(object):
 
   def listdirs(self, path = '.'):
     for f in os.listdir(path):
+      f = os.path.join(path, f)
       if os.path.isdir(f):
-        yield os.path.join(path, f) if path != '.' else f
+        yield f
 
   def print_usage(self):
     print('\nUsage: switch [id]')
