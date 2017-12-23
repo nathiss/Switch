@@ -1,0 +1,5 @@
+{
+  "title": "title to show in info",
+  "exec_path": "relative path to exec in ROOT_DIR/this_dir",
+  "symlink_name": "name of symlink to create"
+}

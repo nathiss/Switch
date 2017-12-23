@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+# === CONFIG ===
+
+ROOT_DIR = '/opt/switch'
+CONFIG_NAME = '.switch.json'
+SYMLINK_DIR = '/home/user/.local/bin'
+
+# ==============
+
+import sys
+import json
+import os
+
+class Switch(object):
+  def __init__(self, argv):
+    self.argv = argv
+    self.root_dir = ROOT_DIR
+    self.config_name = CONFIG_NAME
+    self.symlink_dir = SYMLINK_DIR
+    self.version = '0.0.1'
+    self.id_num = 0
+    self.dirs = self.get_subdir_list()
+    self.config = self.read_config()
+
+  def run(self):
+    if len(self.argv) < 2:
+      self.print_dir()
+      self.print_usage()
+    else:
+      self.id = int(self.argv[1])
+      self.change_exec()
+
+  def print_dir(self):
+    print('Switch (version: ' + self.version + '):\n')
+    if len(self.config) == 0:
+      print('Root dir ' + self.root_dir + ' does not contain any modues.')
+      sys.exit(4)
+    for k, v in enumerate(self.config):
+      print(self.generate_info(k ,v))
+
+  def read_config(self):
+    ret = []
+    for d in self.dirs:
+      f_name = os.path.join(d, self.config_name)
+      try:
+        file = open(f_name, 'r')
+      except OSError:
+        continue
+      config = json.loads(file.read())
+      file.close()
+      config['exec_path'] = self.abs_path(d, config['exec_path'])
+      config['symlink_name'] = self.abs_path(self.symlink_dir, config['symlink_name'])
+      ret.append(config)
+    return ret
+
+  def generate_info(self, k, v):
+    return '[' + str(k) + ']\t' + v['title']
+
+  def abs_path(self, d, path):
+    return os.path.normpath(os.path.join(d, path))
+
+  def get_subdir_list(self):
+    try:
+      gen = self.listdirs(self.root_dir)
+    except OSError:
+      print('Root dir ', self.root_dir, ' does not exist.')
+      sys.exit(1)
+    dirs = list(gen)
+    if len(dirs) == 0:
+      print('Root dir ', self.root_dir, ' does not contain any subdir.')
+      sys.exit(3)
+    return dirs
+
+  def listdirs(self, path = '.'):
+    for f in os.listdir(path):
+      if os.path.isdir(f):
+        yield os.path.join(path, f) if path != '.' else f
+
+  def print_usage(self):
+    print('\nUsage: switch [id]')
+
+  def change_exec(self):
+    try:
+      config = self.config[self.id]
+    except IndexError:
+      print('Given id does not exist.')
+      sys.exit(5)
+    symlink_path = config['symlink_name']
+    exec_path = config['exec_path']
+    if os.path.isfile(symlink_path):
+      os.unlink(symlink_path)
+    os.symlink(exec_path, symlink_path)
+
+
+def main():
+  switch = Switch(sys.argv)
+  switch.run()
+
+if __name__ == '__main__':
+  main()
